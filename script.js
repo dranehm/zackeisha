@@ -5,17 +5,69 @@ const rsvpForm    = document.getElementById('rsvpForm');
 const rsvpContent = document.getElementById('rsvpContent');
 const thankYou    = document.getElementById('thankYou');
 
+// Cache of all submitted names (fetched on load for duplicate checking)
+let submittedNames = [];
+
+function fetchSubmittedNames() {
+    fetch(APPS_SCRIPT_URL)
+        .then(res => res.json())
+        .then(data => {
+            submittedNames = (data.guests || []).map(g => g.name.trim().toLowerCase());
+        })
+        .catch(() => { submittedNames = []; });
+}
+fetchSubmittedNames();
+
+// Inline error helper
+function setNameError(msg) {
+    const nameInput = rsvpForm.querySelector('input[type="text"]');
+    let errEl = document.getElementById('nameError');
+    if (!errEl) {
+        errEl = document.createElement('p');
+        errEl.id = 'nameError';
+        errEl.className = 'text-xs text-rose-400 mt-1 tracking-wide';
+        nameInput.parentNode.appendChild(errEl);
+    }
+    errEl.textContent = msg;
+    nameInput.classList.toggle('border-rose-300', !!msg);
+    nameInput.classList.toggle('border-pink-100',  !msg);
+}
+
+// Clear error as user types
+const nameInputEl = document.querySelector('#rsvpForm input[type="text"]');
+if (nameInputEl) {
+    nameInputEl.addEventListener('input', () => setNameError(''));
+}
+
 rsvpForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    const nameInput     = rsvpForm.querySelector('input[type="text"]');
+    const nameInput      = rsvpForm.querySelector('input[type="text"]');
     const attendingInput = rsvpForm.querySelector('input[name="attending"]:checked');
-    const messageInput  = rsvpForm.querySelector('textarea');
+    const messageInput   = rsvpForm.querySelector('textarea');
+    const name           = nameInput ? nameInput.value.trim() : '';
+
+    // ── Duplicate check ──────────────────────────────────────────────────────
+    if (submittedNames.includes(name.toLowerCase())) {
+        setNameError('This name has already been submitted. Please check your entry.');
+        nameInput.focus();
+        return;
+    }
+    setNameError('');
+
     const entry = {
-        name:      nameInput     ? nameInput.value.trim()     : '',
-        attending: attendingInput ? attendingInput.value       : '',
-        message:   messageInput  ? messageInput.value.trim()  : '',
+        name,
+        attending: attendingInput ? attendingInput.value      : '',
+        message:   messageInput   ? messageInput.value.trim() : '',
         timestamp: new Date().toISOString()
     };
+
+    // Optimistically add to local cache to block double-click re-submit
+    submittedNames.push(name.toLowerCase());
+
+    const submitBtn = rsvpForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         mode:   'no-cors',
@@ -29,6 +81,10 @@ rsvpForm.addEventListener('submit', function(e) {
     })
     .catch(err => {
         console.error('Fetch error:', err);
+        // Roll back optimistic cache entry on failure
+        submittedNames = submittedNames.filter(n => n !== name.toLowerCase());
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Response';
         alert('Network error: ' + err.message);
     });
 });
@@ -46,6 +102,8 @@ function fetchAttendeeCount() {
                 const n = data.attendingYes ?? 0;
                 labelEl.textContent = n === 1 ? 'Guest Attending' : 'Guests Attending';
             }
+            // Keep local names cache in sync
+            submittedNames = (data.guests || []).map(g => g.name.trim().toLowerCase());
         })
         .catch(() => {
             const countEl = document.getElementById('attendeeCount');
@@ -96,7 +154,6 @@ function loadGuestList() {
         .then(res => res.json())
         .then(data => {
             modalLoading.classList.add('hidden');
-            // Expects data.guests array; filter attending = 'yes'
             const guests = (data.guests || []).filter(g => g.attending === 'yes');
 
             if (guests.length === 0) {
@@ -119,18 +176,6 @@ function loadGuestList() {
                 const color = colors[i % colors.length];
                 const li = document.createElement('li');
                 li.className = 'py-4 flex items-center gap-4';
-                /* li.innerHTML = `
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${color}">
-                        ${initials}
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <p class="font-semibold text-gray-800 text-sm truncate">${escapeHtml(guest.name)}</p>
-                        ${guest.message
-                            ? `<p class="text-xs text-gray-400 italic truncate">"${escapeHtml(guest.message)}"</p>`
-                            : `<p class="text-xs text-pink-300 uppercase tracking-wider">Joyfully Accepts</p>`
-                        }
-                    </div>
-                `; */
                 li.innerHTML = `
                     <div class="min-w-0 flex-1">
                         <p class="font-semibold text-gray-800 text-sm truncate">${escapeHtml(guest.name)}</p>
