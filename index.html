@@ -249,18 +249,33 @@
         setInterval(updateCountdown, 1000);
         updateCountdown();
 
-        // smooth scrolling for 'View Event Details' link, preventing default anchor jump
+        // smooth scrolling utility for consistent behavior across devices
+        function smoothScrollTo(targetY, duration = 600) {
+            const startY = window.pageYOffset;
+            const distance = targetY - startY;
+            let startTime = null;
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const time = timestamp - startTime;
+                const percent = Math.min(time / duration, 1);
+                // ease-in-out quadratic
+                const ease = percent < 0.5 ? 2 * percent * percent : -1 + (4 - 2 * percent) * percent;
+                window.scrollTo(0, startY + distance * ease);
+                if (time < duration) {
+                    requestAnimationFrame(step);
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
         const detailsLink = document.getElementById('detailsLink');
         if (detailsLink) {
             detailsLink.addEventListener('click', function(e) {
                 e.preventDefault();
-                console.log('detailsLink clicked, performing smooth scroll');
                 const target = document.getElementById('details');
                 if (target) {
-                    // use scrollTo with explicit top offset as fallback
-                    window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+                    smoothScrollTo(target.offsetTop);
                 }
-                // update hash after scroll so that browser history is consistent
                 history.pushState(null, '', '#details');
             });
         }
