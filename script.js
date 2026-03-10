@@ -16,23 +16,37 @@ rsvpForm.addEventListener('submit', function(e) {
         timestamp: new Date().toISOString()
     };
 
-    // read existing array from localStorage or start fresh
-    const existing = JSON.parse(localStorage.getItem('rsvpResponses') || '[]');
-    existing.push(entry);
-    localStorage.setItem('rsvpResponses', JSON.stringify(existing));
-
-    // show thank you state
-    rsvpContent.classList.add('hidden');
-    thankYou.classList.remove('hidden');
+    // send to Google Sheets via Apps Script web app
+    console.log('Sending data:', entry);
+    fetch('https://script.google.com/macros/s/AKfycbxBcciG6o5oMi1pTodBsJb-kKS8EDIVAQrYhLjC8_DOPXz6VSTNLUV1RRRJ51SumzcAvQ/exec', {
+        method: 'POST',
+        mode: 'cors', // ensure CORS mode
+        body: JSON.stringify(entry),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Server response:', data);
+        if (data.status === 'success') {
+            // show thank you state
+            rsvpContent.classList.add('hidden');
+            thankYou.classList.remove('hidden');
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        alert('Network error: ' + error.message + '. Check console for details.');
+    });
 });
 
-// helper that other scripts (or dev tools) can call to retrieve saved RSVPs
-function getRsvpResponses() {
-    return JSON.parse(localStorage.getItem('rsvpResponses') || '[]');
-}
-
-// optional: print count to console on load
-console.log('RSVP entries stored:', getRsvpResponses().length);
+// optional: print count to console on load (removed localStorage dependency)
 
 
 const targetDate = new Date('March 17, 2026 10:00:00').getTime();
