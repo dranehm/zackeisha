@@ -119,16 +119,21 @@ function loadGuestList() {
                 const color = colors[i % colors.length];
                 const li = document.createElement('li');
                 li.className = 'py-4 flex items-center gap-4';
-                li.innerHTML = `
-                    /* <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${color}">
+                /* li.innerHTML = `
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${color}">
                         ${initials}
-                    </div> */
+                    </div>
                     <div class="min-w-0 flex-1">
                         <p class="font-semibold text-gray-800 text-sm truncate">${escapeHtml(guest.name)}</p>
-                       /*  ${guest.message
+                        ${guest.message
                             ? `<p class="text-xs text-gray-400 italic truncate">"${escapeHtml(guest.message)}"</p>`
                             : `<p class="text-xs text-pink-300 uppercase tracking-wider">Joyfully Accepts</p>`
-                        } */
+                        }
+                    </div>
+                `; */
+                li.innerHTML = `
+                    <div class="min-w-0 flex-1">
+                        <p class="font-semibold text-gray-800 text-sm truncate">${escapeHtml(guest.name)}</p>
                     </div>
                 `;
                 guestList.appendChild(li);
