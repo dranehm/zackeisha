@@ -1,39 +1,35 @@
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBcciG6o5oMi1pTodBsJb-kKS8EDIVAQrYhLjC8_DOPXz6VSTNLUV1RRRJ51SumzcAvQ/exec';
 
 // ─── RSVP Form ───────────────────────────────────────────────────────────────
-const rsvpForm = document.getElementById('rsvpForm');
+const rsvpForm    = document.getElementById('rsvpForm');
 const rsvpContent = document.getElementById('rsvpContent');
-const thankYou = document.getElementById('thankYou');
+const thankYou    = document.getElementById('thankYou');
 
 rsvpForm.addEventListener('submit', function(e) {
     e.preventDefault();
-
-    const nameInput = rsvpForm.querySelector('input[type="text"]');
+    const nameInput     = rsvpForm.querySelector('input[type="text"]');
     const attendingInput = rsvpForm.querySelector('input[name="attending"]:checked');
-    const messageInput = rsvpForm.querySelector('textarea');
+    const messageInput  = rsvpForm.querySelector('textarea');
     const entry = {
-        name: nameInput ? nameInput.value.trim() : '',
-        attending: attendingInput ? attendingInput.value : '',
-        message: messageInput ? messageInput.value.trim() : '',
+        name:      nameInput     ? nameInput.value.trim()     : '',
+        attending: attendingInput ? attendingInput.value       : '',
+        message:   messageInput  ? messageInput.value.trim()  : '',
         timestamp: new Date().toISOString()
     };
-
-    console.log('Sending data:', entry);
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors',
-        body: JSON.stringify(entry),
+        mode:   'no-cors',
+        body:   JSON.stringify(entry),
         headers: { 'Content-Type': 'text/plain' }
     })
     .then(() => {
         rsvpContent.classList.add('hidden');
         thankYou.classList.remove('hidden');
-        // Refresh count after a new RSVP is submitted
         setTimeout(fetchAttendeeCount, 1500);
     })
-    .catch(error => {
-        console.error('Fetch error:', error);
-        alert('Network error: ' + error.message);
+    .catch(err => {
+        console.error('Fetch error:', err);
+        alert('Network error: ' + err.message);
     });
 });
 
@@ -45,48 +41,124 @@ function fetchAttendeeCount() {
         .then(data => {
             const countEl = document.getElementById('attendeeCount');
             const labelEl = document.getElementById('attendeeLabel');
-            if (countEl) {
-                countEl.textContent = data.attendingYes ?? data.total ?? '—';
-            }
+            if (countEl) countEl.textContent = data.attendingYes ?? data.total ?? '—';
             if (labelEl) {
-                // pluralise gracefully
                 const n = data.attendingYes ?? 0;
                 labelEl.textContent = n === 1 ? 'Guest Attending' : 'Guests Attending';
             }
         })
-        .catch(err => {
-            console.warn('Could not fetch attendee count:', err);
+        .catch(() => {
             const countEl = document.getElementById('attendeeCount');
             if (countEl) countEl.textContent = '—';
         });
 }
-
-// Fetch on page load
 fetchAttendeeCount();
+
+
+// ─── Attendee Modal ──────────────────────────────────────────────────────────
+const modal         = document.getElementById('attendeeModal');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const closeModalBtn = document.getElementById('closeModal');
+const guestList     = document.getElementById('guestList');
+const guestEmpty    = document.getElementById('guestEmpty');
+const modalLoading  = document.getElementById('modalLoading');
+const attendeeCard  = document.getElementById('attendeeCard');
+
+function openModal() {
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    loadGuestList();
+}
+
+function closeModal() {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+attendeeCard.addEventListener('click', openModal);
+closeModalBtn.addEventListener('click', closeModal);
+modalBackdrop.addEventListener('click', closeModal);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function loadGuestList() {
+    modalLoading.classList.remove('hidden');
+    guestList.classList.add('hidden');
+    guestEmpty.classList.add('hidden');
+    guestList.innerHTML = '';
+
+    fetch(APPS_SCRIPT_URL)
+        .then(res => res.json())
+        .then(data => {
+            modalLoading.classList.add('hidden');
+            // Expects data.guests array; filter attending = 'yes'
+            const guests = (data.guests || []).filter(g => g.attending === 'yes');
+
+            if (guests.length === 0) {
+                guestEmpty.classList.remove('hidden');
+                return;
+            }
+
+            const colors = [
+                'bg-pink-100 text-pink-500',
+                'bg-rose-100 text-rose-500',
+                'bg-fuchsia-100 text-fuchsia-500',
+                'bg-purple-100 text-purple-400',
+                'bg-orange-100 text-orange-400',
+            ];
+
+            guests.forEach((guest, i) => {
+                const initials = guest.name
+                    ? guest.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+                    : '?';
+                const color = colors[i % colors.length];
+                const li = document.createElement('li');
+                li.className = 'py-4 flex items-center gap-4';
+                li.innerHTML = `
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${color}">
+                        ${initials}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-semibold text-gray-800 text-sm truncate">${escapeHtml(guest.name)}</p>
+                        ${guest.message
+                            ? `<p class="text-xs text-gray-400 italic truncate">"${escapeHtml(guest.message)}"</p>`
+                            : `<p class="text-xs text-pink-300 uppercase tracking-wider">Joyfully Accepts</p>`
+                        }
+                    </div>
+                    <span class="ml-auto text-base shrink-0">&#x1F54A;&#xFE0F;</span>
+                `;
+                guestList.appendChild(li);
+            });
+
+            guestList.classList.remove('hidden');
+        })
+        .catch(err => {
+            console.error('Could not load guest list:', err);
+            modalLoading.classList.add('hidden');
+            guestEmpty.classList.remove('hidden');
+        });
+}
 
 
 // ─── Countdown Timer ─────────────────────────────────────────────────────────
 const targetDate = new Date('March 17, 2026 10:00:00').getTime();
 
 function updateCountdown() {
-    const now = new Date().getTime();
+    const now  = new Date().getTime();
     const diff = targetDate - now;
-
     if (diff > 0) {
-        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-        document.getElementById('days').innerText = d.toString().padStart(2, '0');
-        document.getElementById('hours').innerText = h.toString().padStart(2, '0');
-        document.getElementById('minutes').innerText = m.toString().padStart(2, '0');
+        document.getElementById('days').innerText    = Math.floor(diff / 86400000).toString().padStart(2, '0');
+        document.getElementById('hours').innerText   = Math.floor((diff % 86400000) / 3600000).toString().padStart(2, '0');
+        document.getElementById('minutes').innerText = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
     } else {
-        document.getElementById('days').innerText = '00';
-        document.getElementById('hours').innerText = '00';
-        document.getElementById('minutes').innerText = '00';
+        ['days','hours','minutes'].forEach(id => document.getElementById(id).innerText = '00');
     }
 }
-
 setInterval(updateCountdown, 1000);
 updateCountdown();
 
@@ -94,15 +166,14 @@ updateCountdown();
 // ─── Smooth Scroll ───────────────────────────────────────────────────────────
 function smoothScrollTo(targetY, duration = 600) {
     const startY = window.pageYOffset;
-    const distance = targetY - startY;
-    let startTime = null;
-    function step(timestamp) {
-        if (!startTime) startTime = timestamp;
-        const time = timestamp - startTime;
-        const percent = Math.min(time / duration, 1);
-        const ease = percent < 0.5 ? 2 * percent * percent : -1 + (4 - 2 * percent) * percent;
-        window.scrollTo(0, startY + distance * ease);
-        if (time < duration) requestAnimationFrame(step);
+    const dist   = targetY - startY;
+    let start    = null;
+    function step(ts) {
+        if (!start) start = ts;
+        const p = Math.min((ts - start) / duration, 1);
+        const e = p < 0.5 ? 2*p*p : -1 + (4-2*p)*p;
+        window.scrollTo(0, startY + dist * e);
+        if (ts - start < duration) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
 }
