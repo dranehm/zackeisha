@@ -245,6 +245,12 @@
 
         setInterval(updateCountdown, 1000);
         updateCountdown();
+
+        // smooth scrolling for 'View Event Details' link (fallback if CSS isn't supported)
+        document.querySelector('a[href="#details"]').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('details').scrollIntoView({ behavior: 'smooth' });
+        });
     </script>
 </body>
 </html>
