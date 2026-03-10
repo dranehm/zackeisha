@@ -72,7 +72,7 @@
                 <p class="text-[10px] md:text-xs uppercase tracking-[0.3em] text-gray-400">At Ten O'Clock in the Morning</p>
             </div>
             
-            <a href="#details" class="mt-12 inline-block px-8 py-3 bg-pink-400 text-white rounded-full hover:bg-pink-500 transition-all shadow-lg uppercase text-[10px] tracking-widest font-bold">
+            <a href="#" id="detailsLink" class="mt-12 inline-block px-8 py-3 bg-pink-400 text-white rounded-full hover:bg-pink-500 transition-all shadow-lg uppercase text-[10px] tracking-widest font-bold">
                 View Event Details
             </a>
         </div>
@@ -246,11 +246,16 @@
         setInterval(updateCountdown, 1000);
         updateCountdown();
 
-        // smooth scrolling for 'View Event Details' link (fallback if CSS isn't supported)
-        document.querySelector('a[href="#details"]').addEventListener('click', function(e) {
-            e.preventDefault();
-            document.getElementById('details').scrollIntoView({ behavior: 'smooth' });
-        });
+        // smooth scrolling for 'View Event Details' link, preventing default anchor jump
+        const detailsLink = document.getElementById('detailsLink');
+        if (detailsLink) {
+            detailsLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('details').scrollIntoView({ behavior: 'smooth' });
+                // update hash after scroll so that browser history is consistent
+                history.pushState(null, '', '#details');
+            });
+        }
     </script>
 </body>
 </html>
