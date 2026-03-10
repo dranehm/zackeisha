@@ -11,6 +11,9 @@
             scroll-behavior: smooth;
         }
         body {
+            scroll-behavior: smooth; /* ensure compatibility */
+        }
+        body {
             font-family: 'Lato', sans-serif;
             background-color: #fdfaf7;
             overflow-x: hidden;
@@ -251,7 +254,12 @@
         if (detailsLink) {
             detailsLink.addEventListener('click', function(e) {
                 e.preventDefault();
-                document.getElementById('details').scrollIntoView({ behavior: 'smooth' });
+                console.log('detailsLink clicked, performing smooth scroll');
+                const target = document.getElementById('details');
+                if (target) {
+                    // use scrollTo with explicit top offset as fallback
+                    window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+                }
                 // update hash after scroll so that browser history is consistent
                 history.pushState(null, '', '#details');
             });
