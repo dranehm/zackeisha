@@ -1,0 +1,34 @@
+html {
+    scroll-behavior: smooth;
+}
+body {
+    scroll-behavior: smooth; /* ensure compatibility */
+}
+body {
+    font-family: 'Lato', sans-serif;
+    background-color: #fdfaf7;
+    overflow-x: hidden;
+}
+.font-serif {
+    font-family: 'Playfair Display', serif;
+}
+.font-cursive {
+    font-family: 'Alex Brush', cursive;
+}
+.fade-in {
+    animation: fadeIn 1.5s ease-out forwards;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+/* Fluid scaling for the name to keep it elegant on all screens */
+.hero-name {
+    font-size: clamp(3.5rem, 12vw, 9rem);
+}
