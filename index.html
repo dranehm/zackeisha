@@ -135,7 +135,7 @@
                         <div class="absolute -inset-4 bg-pink-50 rounded-full blur-2xl opacity-60"></div>
                         <!-- Resized photo container for better balance -->
                         <div class="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-[380px] lg:h-[380px] rounded-full border-8 border-white overflow-hidden shadow-2xl">
-                            <img src="https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800&auto=format&fit=crop" alt="Baby Zackeisha" class="w-full h-full object-cover">
+                            <img src="/src/Keisha.png" alt="Baby Zackeisha" class="w-full h-full object-cover">
                         </div>
                         <!-- Small decorative element on image -->
                         <div class="absolute -bottom-2 -right-2 bg-white p-3 rounded-full shadow-lg hidden md:flex items-center justify-center">
@@ -225,9 +225,36 @@
 
         rsvpForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            // gather form values
+            const nameInput = rsvpForm.querySelector('input[type="text"]');
+            const attendingInput = rsvpForm.querySelector('input[name="attending"]:checked');
+            const messageInput = rsvpForm.querySelector('textarea');
+            const entry = {
+                name: nameInput ? nameInput.value.trim() : '',
+                attending: attendingInput ? attendingInput.value : '',
+                message: messageInput ? messageInput.value.trim() : '',
+                timestamp: new Date().toISOString()
+            };
+
+            // read existing array from localStorage or start fresh
+            const existing = JSON.parse(localStorage.getItem('rsvpResponses') || '[]');
+            existing.push(entry);
+            localStorage.setItem('rsvpResponses', JSON.stringify(existing));
+
+            // show thank you state
             rsvpContent.classList.add('hidden');
             thankYou.classList.remove('hidden');
         });
+
+        // helper that other scripts (or dev tools) can call to retrieve saved RSVPs
+        function getRsvpResponses() {
+            return JSON.parse(localStorage.getItem('rsvpResponses') || '[]');
+        }
+
+        // optional: print count to console on load
+        console.log('RSVP entries stored:', getRsvpResponses().length);
+
 
         const targetDate = new Date('March 17, 2026 10:00:00').getTime();
 
