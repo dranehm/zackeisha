@@ -19,31 +19,22 @@ rsvpForm.addEventListener('submit', function(e) {
     // send to Google Sheets via Apps Script web app
     console.log('Sending data:', entry);
     fetch('https://script.google.com/macros/s/AKfycbxBcciG6o5oMi1pTodBsJb-kKS8EDIVAQrYhLjC8_DOPXz6VSTNLUV1RRRJ51SumzcAvQ/exec', {
-        method: 'POST',
-        mode: 'cors', // ensure CORS mode
-        body: JSON.stringify(entry),
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Server response:', data);
-        if (data.status === 'success') {
-            // show thank you state
-            rsvpContent.classList.add('hidden');
-            thankYou.classList.remove('hidden');
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Fetch error:', error);
-        alert('Network error: ' + error.message + '. Check console for details.');
-    });
+    method: 'POST',
+    mode: 'no-cors',  // ✅ change from 'cors' to 'no-cors'
+    body: JSON.stringify(entry),
+    headers: {
+        'Content-Type': 'text/plain'  // ✅ change from 'application/json' to 'text/plain'
+    }
+})
+.then(() => {
+    // ✅ no response.json() — with no-cors the response is opaque
+    rsvpContent.classList.add('hidden');
+    thankYou.classList.remove('hidden');
+})
+.catch(error => {
+    console.error('Fetch error:', error);
+    alert('Network error: ' + error.message);
+});
 });
 
 // optional: print count to console on load (removed localStorage dependency)
